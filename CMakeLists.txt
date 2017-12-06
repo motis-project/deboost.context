@@ -1,25 +1,10 @@
-# PROJECT: fcontext
-cmake_minimum_required(VERSION 3.0)
 project(fcontext)
-
-if (NOT CMAKE_MODULE_PATH)
-    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-endif()
-
-# IOS is a different story, I had to make xcode project manually that contains two targets with different ARCHS and 
-# Another target to join them together
-if (IOS)
-    add_custom_target(fcontext 
-        COMMAND xcodebuild -workspace ${CMAKE_CURRENT_SOURCE_DIR}/projects/xcode/fcontext/fcontext.xcodeproj/project.xcworkspace -scheme fcontext -configuration 'Release' -sdk iphoneos CONFIGURATION_BUILD_DIR=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-        COMMENT "Building deboost.context"
-        VERBATIM)
-    return()
-endif()
+cmake_minimum_required(VERSION 3.0)
 
 if (MSVC)
-    enable_language(CXX ASM_MASM)
+  enable_language(CXX ASM_MASM)
 else()
-    enable_language(CXX ASM)
+  enable_language(CXX ASM)
 endif()
 
 if(MSVC)
@@ -28,57 +13,53 @@ if(MSVC)
 endif()
 add_definitions(-DBOOST_CONTEXT_EXPORT=)
 
-set(HEADER "include/fcontext/fcontext.h")
-set(SOURCES "source/stack.cpp")
-
 # OS
 if (UNIX)
-    if (ANDROID)
-        # Android
-        if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
-            set(CPU_ARCH "arm")
-            set(ASM_EXT "aapcs_elf_gas.S")
-        elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
-            set(CPU_ARCH "arm64")
-            set(ASM_EXT "aapcs_elf_gas.S")
-        elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "i686")
-            set(CPU_ARCH "i386")
-            set(ASM_EXT "sysv_elf_gas.S")
-        elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
-            set(CPU_ARCH "x86_64")
-            set(ASM_EXT "sysv_elf_gas.S")
-        endif()
-    else()
-        # PC (x86/x64)
-        if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-            set(CPU_ARCH "x86_64")
-        else()
-            set(CPU_ARCH "i386")
-        endif()
-        if (APPLE)
-            set(ASM_EXT "sysv_macho_gas.S") # OSX
-        else()
-            set(ASM_EXT "sysv_elf_gas.S")  # Linux/Unix
-        endif()
+  if (ANDROID)
+    # Android
+    if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
+      set(CPU_ARCH "arm")
+      set(ASM_EXT "aapcs_elf_gas.S")
+    elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
+      set(CPU_ARCH "arm64")
+      set(ASM_EXT "aapcs_elf_gas.S")
+    elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "i686")
+      set(CPU_ARCH "i386")
+      set(ASM_EXT "sysv_elf_gas.S")
+    elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
+      set(CPU_ARCH "x86_64")
+      set(ASM_EXT "sysv_elf_gas.S")
     endif()
-elseif(WIN32)
-    # Windows PC
+  else()
+    # PC (x86/x64)
     if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(CPU_ARCH "x86_64")
+      set(CPU_ARCH "x86_64")
     else()
-        set(CPU_ARCH "i386")
+      set(CPU_ARCH "i386")
     endif()
-    set(ASM_EXT "ms_pe_masm.asm")
+
+    if (APPLE)
+      set(ASM_EXT "sysv_macho_gas.S") # OSX
+    else()
+      set(ASM_EXT "sysv_elf_gas.S")  # Linux/Unix
+    endif()
+  endif()
+elseif(WIN32)
+  # Windows PC
+  if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(CPU_ARCH "x86_64")
+  else()
+    set(CPU_ARCH "i386")
+  endif()
+  set(ASM_EXT "ms_pe_masm.asm")
 endif()
 
-set(ASM_SOURCES "asm/make_${CPU_ARCH}_${ASM_EXT}"
-                "asm/jump_${CPU_ARCH}_${ASM_EXT}"
-                "asm/ontop_${CPU_ARCH}_${ASM_EXT}")
+set(ASM_SOURCES
+  "asm/make_${CPU_ARCH}_${ASM_EXT}"
+  "asm/jump_${CPU_ARCH}_${ASM_EXT}"
+  "asm/ontop_${CPU_ARCH}_${ASM_EXT}")
 
-add_library(fcontext STATIC ${SOURCES} ${ASM_SOURCES})
+add_library(fcontext STATIC "source/stack.cpp" ${ASM_SOURCES})
 target_include_directories(fcontext 
     PRIVATE include/fcontext
     INTERFACE include)
-
-#install(TARGETS fcontext DESTINATION lib)
-#install(FILES ${HEADER} DESTINATION include/fcontext)
