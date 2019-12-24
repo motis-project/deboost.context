@@ -1,6 +1,7 @@
 project(fcontext)
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.16)
 
+set(CMAKE_MSVC_RUNTIME_LIBRARY "")
 if (MSVC)
   enable_language(CXX ASM_MASM)
 else()
