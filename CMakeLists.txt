@@ -1,15 +1,11 @@
-# PROJECT: fcontext
-cmake_minimum_required(VERSION 3.0)
-project(fcontext C)
+project(fcontext)
+cmake_minimum_required(VERSION 3.16)
 
-if (NOT CMAKE_MODULE_PATH)
-    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-endif()
-
+set(CMAKE_MSVC_RUNTIME_LIBRARY "")
 if (MSVC)
-    enable_language(CXX ASM_MASM)
+  enable_language(CXX ASM_MASM)
 else()
-    enable_language(CXX ASM)
+  enable_language(CXX ASM)
 endif()
 
 if(MSVC)
@@ -18,57 +14,53 @@ if(MSVC)
 endif()
 add_definitions(-DBOOST_CONTEXT_EXPORT=)
 
-set(HEADER "include/fcontext/fcontext.h")
-set(SOURCES "source/stack.c")
-
 # OS
-if (APPLE)
-    set(CPU_ARCH "combined")
-    set(ASM_EXT "all_macho_gas.S")
-elseif (ANDROID)
+if (UNIX)
+  if (ANDROID)
     # Android
     if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
-        set(CPU_ARCH "arm")
-        set(ASM_EXT "aapcs_elf_gas.S")
+      set(CPU_ARCH "arm")
+      set(ASM_EXT "aapcs_elf_gas.S")
     elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
-        set(CPU_ARCH "arm64")
-        set(ASM_EXT "aapcs_elf_gas.S")
+      set(CPU_ARCH "arm64")
+      set(ASM_EXT "aapcs_elf_gas.S")
     elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "i686")
-        set(CPU_ARCH "i386")
-        set(ASM_EXT "sysv_elf_gas.S")
+      set(CPU_ARCH "i386")
+      set(ASM_EXT "sysv_elf_gas.S")
     elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
-        set(CPU_ARCH "x86_64")
-        set(ASM_EXT "sysv_elf_gas.S")
+      set(CPU_ARCH "x86_64")
+      set(ASM_EXT "sysv_elf_gas.S")
     endif()
-elseif (UNIX)
+  else()
     # PC (x86/x64)
     if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(CPU_ARCH "x86_64")
+      set(CPU_ARCH "x86_64")
     else()
-        set(CPU_ARCH "i386")
+      set(CPU_ARCH "i386")
     endif()
-    set(ASM_EXT "sysv_elf_gas.S")  # Linux/Unix
-elseif (WIN32)
-    # Windows PC
-    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(CPU_ARCH "x86_64")
+
+    if (APPLE)
+      set(ASM_EXT "sysv_macho_gas.S") # OSX
     else()
-        set(CPU_ARCH "i386")
+      set(ASM_EXT "sysv_elf_gas.S")  # Linux/Unix
     endif()
-    set(ASM_EXT "ms_pe_masm.asm")
+  endif()
+elseif(WIN32)
+  # Windows PC
+  if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(CPU_ARCH "x86_64")
+  else()
+    set(CPU_ARCH "i386")
+  endif()
+  set(ASM_EXT "ms_pe_masm.asm")
 endif()
 
-set(ASM_SOURCES "asm/make_${CPU_ARCH}_${ASM_EXT}"
-                "asm/jump_${CPU_ARCH}_${ASM_EXT}"
-                "asm/ontop_${CPU_ARCH}_${ASM_EXT}")
+set(ASM_SOURCES
+  "asm/make_${CPU_ARCH}_${ASM_EXT}"
+  "asm/jump_${CPU_ARCH}_${ASM_EXT}"
+  "asm/ontop_${CPU_ARCH}_${ASM_EXT}")
 
-add_library(fcontext STATIC ${SOURCES} ${ASM_SOURCES})
+add_library(fcontext STATIC "source/stack.cpp" ${ASM_SOURCES})
 target_include_directories(fcontext
     PRIVATE include/fcontext
     INTERFACE include)
-
-set_target_properties(fcontext PROPERTIES FOLDER Deps ${IOS_GENERAL_PROPERTIES})
-
-install(TARGETS fcontext DESTINATION lib)
-install(FILES ${HEADER} DESTINATION include/fcontext)
-
