@@ -60,7 +60,7 @@ set(ASM_SOURCES
   "asm/jump_${CPU_ARCH}_${ASM_EXT}"
   "asm/ontop_${CPU_ARCH}_${ASM_EXT}")
 
-add_library(fcontext STATIC "source/stack.cpp" ${ASM_SOURCES})
+add_library(fcontext STATIC "source/stack.c" ${ASM_SOURCES})
 target_include_directories(fcontext
     PRIVATE include/fcontext
     INTERFACE include)
